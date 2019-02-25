@@ -24,6 +24,5 @@ interface ResourceInterface extends ResourceIdentifierInterface
      */
     public function getResourceRelationships(array $linked = []);
 
-    public function setResourceRelationship($name, $relationship);
-
+    public function setResourceRelationship($action, $name, $relationship);
 }

@@ -36,9 +36,7 @@ class ViewRelatedAction extends Action
         }
 
         /** @var ActiveQuery $related */
-        if (!$related = $model->getRelation($name, false)) {
-            throw new NotFoundHttpException('Resource does not exist');
-        }
+        $related = $model->getRelation($name);
 
         if ($this->checkAccess) {
             call_user_func($this->checkAccess, $this->id, $model, $name);

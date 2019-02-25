@@ -21,12 +21,6 @@ use yii\web\NotFoundHttpException;
 class DeleteRelationshipAction extends Action
 {
     /**
-     * Removes the relationships from primary model.
-     * @var callable
-     */
-    public $unlinkRelationships;
-
-    /**
      * @param string $id an ID of the primary resource
      * @param string $name a name of the related resource
      * @return ActiveDataProvider
@@ -36,16 +30,10 @@ class DeleteRelationshipAction extends Action
      */
     public function run($id, $name)
     {
-        /** @var BaseActiveRecord $model */
+         /** @var BaseActiveRecord $model */
         $model = $this->findModel($id);
 
-        if (!$related = $model->getRelation($name, false)) {
-            throw new NotFoundHttpException('Relationship does not exist');
-        }
-
-        if (!$related->multiple) {
-            throw new ForbiddenHttpException('Unsupported request to update relationship');
-        }
+        $related = $model->getRelation($name);
 
         if ($this->checkAccess) {
             call_user_func($this->checkAccess, $this->id, $model, $name);
@@ -57,41 +45,5 @@ class DeleteRelationshipAction extends Action
         return new ActiveDataProvider([
             'query' => $related
         ]);
-    }
-
-    /**
-     * Removes the relationships from primary model.
-     * @param $model ActiveRecordInterface
-     * @param array $data relationship links
-     */
-    protected function unlinkRelationships($model, array $data = [])
-    {
-        if ($this->unlinkRelationships !== null) {
-            call_user_func($this->unlinkRelationships, $this, $model, $data);
-            return;
-        }
-
-        foreach ($data as $name => $relationship) {
-            /** @var $related ActiveRelationTrait */
-            if (!$related = $model->getRelation($name, false)) {
-                continue;
-            }
-            /** @var BaseActiveRecord $relatedClass */
-            $relatedClass = new $related->modelClass;
-            $relationships = ArrayHelper::keyExists($relatedClass->formName(), $relationship) ? $relationship[$relatedClass->formName()] : [];
-
-            $ids = [];
-            foreach ($relationships as $index => $relObject) {
-                if (!isset($relObject['id'])) {
-                    continue;
-                }
-                $ids[] = $relObject['id'];
-            }
-
-            $records = $relatedClass::find()->andWhere(['in', $relatedClass::primaryKey(), $ids])->all();
-            foreach ($records as $record) {
-                $model->unlink($name, $record);
-            }
-        }
     }
 }

@@ -9,6 +9,8 @@ use Yii;
 use yii\base\Model;
 use yii\helpers\Url;
 use yii\web\ServerErrorHttpException;
+use yii\web\ForbiddenHttpException;
+use yii\helpers\StringHelper;
 
 class CreateAction extends Action
 {
@@ -21,12 +23,6 @@ class CreateAction extends Action
      * @var string the name of the view action. This property is need to create the URL when the model is successfully created.
      */
     public $viewAction = 'view';
-
-    /**
-     * Links the relationships with primary model.
-     * @var callable
-     */
-    public $linkRelationships;
 
     /**
      * Creates a new resource.
@@ -45,6 +41,10 @@ class CreateAction extends Action
         ]);
 
         $request = Yii::$app->getRequest();
+        $body = $request->getBodyParams();
+        if (isset($body[StringHelper::basename($this->modelClass)]['id']) && !$model->isAttributeSafe('id')) {
+            throw new ForbiddenHttpException("Sorry we don't allow client IDs here");
+        }
         $model->load($request->getBodyParams());
         if ($model->save()) {
             $this->linkRelationships($model, $request->getBodyParam('relationships', []));

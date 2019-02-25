@@ -9,6 +9,10 @@ use yii\base\Arrayable;
 use yii\db\ActiveRecordInterface;
 use yii\web\Link;
 use yii\web\Linkable;
+use yii\web\ServerErrorHttpException;
+use yii\web\ForbiddenHttpException;
+use yii\base\InvalidArgumentException;
+use Yii;
 
 trait ResourceTrait
 {
@@ -78,7 +82,7 @@ trait ResourceTrait
      * @param string $name the case sensitive name of the relationship.
      * @param array|ActiveRecordInterface $relationship
      */
-    public function setResourceRelationship($name, $relationship)
+    public function setResourceRelationship($action, $name, $relationship)
     {
         /** @var $this ActiveRecordInterface */
         if (!$this instanceof ActiveRecordInterface) {
@@ -87,7 +91,8 @@ trait ResourceTrait
         if (!is_array($relationship)) {
             $relationship = [$relationship];
         }
-        $this->unlinkAll($name);
+        $action->unlinkAllRelationship($this, $name);
+        //todo remove this link and replace with a call to linkRelationships on the action
         foreach ($relationship as $key => $value) {
             if ($value instanceof ActiveRecordInterface) {
                 $this->link($name, $value);
@@ -138,5 +143,14 @@ trait ResourceTrait
         }
 
         return $result;
+    }
+
+    public function getRelation($name, $throwException = true)
+    {
+        try {
+            return parent::getRelation($name);
+        } catch (InvalidArgumentException $e) {
+            throw new NotFoundHttpException("Relationship [$name] does not exist");
+        }
     }
 }

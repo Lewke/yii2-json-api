@@ -9,6 +9,7 @@ use yii\data\ActiveDataProvider;
 use yii\db\BaseActiveRecord;
 use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
+use yii\web\ForbiddenException;
 use Yii;
 
 /**
@@ -30,16 +31,20 @@ class UpdateRelationshipAction extends Action
         /** @var BaseActiveRecord $model */
         $model = $this->findModel($id);
 
-        if (!$related = $model->getRelation($name, false)) {
-            throw new NotFoundHttpException('Relationship does not exist');
-        }
+        $related = $model->getRelation($name);
 
+        $request = Yii::$app->request;
+        $bodyParams = $request->getBodyParams();
+        
         if ($this->checkAccess) {
             call_user_func($this->checkAccess, $this->id, $model, $name);
         }
 
-        $this->linkRelationships($model, [$name => Yii::$app->getRequest()->getBodyParams()]);
+        if ($request->isPatch && $related->multiple) {
+            $this->unlinkAllRelationship($model, $name);
+        }
 
+        $this->linkRelationships($model, [$name => $bodyParams]);
         if ($related->multiple) {
             return new ActiveDataProvider([
                 'query' => $related

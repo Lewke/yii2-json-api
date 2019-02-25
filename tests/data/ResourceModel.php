@@ -11,6 +11,7 @@ use tuyakhov\jsonapi\ResourceTrait;
 use yii\base\Model;
 use yii\helpers\Url;
 use yii\web\Link;
+use yii\web\NotFoundHttpException;
 
 class ResourceModel extends Model implements ResourceInterface, LinksInterface
 {
@@ -60,10 +61,13 @@ class ResourceModel extends Model implements ResourceInterface, LinksInterface
 
     public function getRelation($name)
     {
-        return isset(static::$related[$name]) ? static::$related[$name] : null;
+        if (!isset(static::$related[$name])) {
+            throw new NotFoundHttpException();
+        }
+        return static::$related[$name];
     }
 
-    public function setResourceRelationship($name, $relationship)
+    public function setResourceRelationship($action, $name, $relationship)
     {
         $this->$name = $relationship;
     }
