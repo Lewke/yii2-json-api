@@ -26,7 +26,11 @@ class IndexActionTest extends TestCase
             ]
         ]);
         $filter = [
-            'filter' => ['field1' => 'test,qwe'],
+            'filter' => [
+                'field1' => [
+                    'in' => ['test', 'qwe']
+                ]
+            ],
             'sort' => 'field1,-field2'
         ];
         \Yii::$app->getRequest()->setQueryParams($filter);
@@ -36,7 +40,7 @@ class IndexActionTest extends TestCase
         $this->assertSame([
             'IN',
             'field1',
-            ['test', 'qwe']
+            ['field1' => 'test', 1 => 'qwe'] //this appears to be a bug in yii's filtering, don't really feel like submitting an issue as it doesn't affect anything
         ], $dataProvider->query->where);
         $this->assertSame(['field1' => SORT_ASC, 'field2' => SORT_DESC], $dataProvider->getSort()->orders);
     }

@@ -115,13 +115,7 @@ class IndexAction extends Action
             return null;
         }
         $requestParams = Yii::$app->getRequest()->getQueryParam('filter', []);
-        $attributeMap = [];
-        foreach ($requestParams as $attribute => $value) {
-            $attributeMap[$attribute] = Inflector::camel2id(Inflector::variablize($attribute), '_');
-            if (strpos($value, ',') !== false) {
-                $requestParams[$attribute] = ['in' => explode(',', $value)];
-            }
-        }
+        $attributeMap = $this->getFilterAttributeMap($requestParams);
         $config = array_merge(['attributeMap' => $attributeMap], $this->dataFilter);
         /** @var DataFilter $dataFilter */
         $dataFilter = Yii::createObject($config);
@@ -129,5 +123,32 @@ class IndexAction extends Action
             return $dataFilter->build();
         }
         return null;
+    }
+
+    private function getFilterAttributeMap($filterConfig)
+    {
+        $attributeMap = [];
+        foreach ($filterConfig as $name => $config) {
+            $filterAttributes = $this->getFilterAttributes($name, $config);
+            $attributeMap = array_merge($attributeMap, $filterAttributes);
+        }
+        return array_unique($attributeMap);
+    }
+
+    private function getFilterAttributes($name, $config)
+    {
+        if (!is_array($config) || $this->isArrayQueryFragment($config)) {
+            return [Inflector::camel2id(Inflector::variablize($name), '_')];
+        }
+        return $this->getFilterAttributeMap($config);
+    }
+
+    private function isArrayQueryFragment($config)
+    {
+        $keys = array_keys($config);
+        //these values come from https://www.yiiframework.com/doc/api/2.0/yii-data-datafilter#$filterControls-detail
+        //this could be a better solution but there's kinda a chicken and egg problem happening here (need to use filterControls and operatorTypes to determine which are query fragments)
+        $intersection = array_intersect(['in', 'not in', 'gt', 'lt', 'gt', 'lte', 'gte', 'eq', 'neq', 'not', 'like'], $keys);
+        return boolval($intersection);
     }
 }
